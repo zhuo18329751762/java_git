@@ -1,11 +1,14 @@
 package com.zhuoyang.ui;
 
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
+
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.*;
 import java.util.Random;
 
 public class GameJFrame extends JFrame implements KeyListener , ActionListener {
@@ -28,6 +31,21 @@ public class GameJFrame extends JFrame implements KeyListener , ActionListener {
     JMenuItem sport = new JMenuItem("运动");
 
     JMenuItem accountItem = new JMenuItem("公众号");
+
+    JMenu saveJMenu = new JMenu("存档");
+    JMenu loadJMenu = new JMenu("读档");
+
+    JMenuItem saveItem0 = new JMenuItem("存档0(空)");
+    JMenuItem saveItem1 = new JMenuItem("存档1(空)");
+    JMenuItem saveItem2 = new JMenuItem("存档2(空)");
+    JMenuItem saveItem3 = new JMenuItem("存档3(空)");
+    JMenuItem saveItem4 = new JMenuItem("存档4(空)");
+
+    JMenuItem loadItem0 = new JMenuItem("读档0(空)");
+    JMenuItem loadItem1 = new JMenuItem("读档1(空)");
+    JMenuItem loadItem2 = new JMenuItem("读档2(空)");
+    JMenuItem loadItem3 = new JMenuItem("读档3(空)");
+    JMenuItem loadItem4 = new JMenuItem("读档4(空)");
     //记录空白方块在二维数组中的位置
     int x = 0;
     int y = 0;
@@ -52,6 +70,38 @@ public class GameJFrame extends JFrame implements KeyListener , ActionListener {
         this.setVisible(true);
     }
 
+    //加载文件信息
+    public void getGameInfo(){
+        // 1 创建File对象表示所有存档所在的文件夹
+        File file=new File("puzzlegame\\save");
+        // 2 进入文件夹获取到里面的存档文件
+        File[] files = file.listFiles();
+        // 3 获取里面的步数,修改菜单
+        //遍历数组，得到每一个存档
+        for (File f : files) {
+
+            ObjectInputStream ois= null;
+            GameInfo gi=null;
+            try {
+                ois = new ObjectInputStream(new FileInputStream(f));
+                gi =(GameInfo) ois.readObject();
+                ois.close();
+            } catch (IOException | ClassNotFoundException ioException) {
+                ioException.printStackTrace();
+            }
+            //获取步数
+            int step=gi.getStep();
+            //把存档步数同步到菜单中
+            String name = f.getName();
+            int index=name.charAt(4)-'0';
+            //修改菜单
+            //存档x(XX步)
+            saveJMenu.getItem(index).setText("存档"+index+"("+step+"步)");
+            //读档
+            loadJMenu.getItem(index).setText("存档"+index+"("+step+"步)");
+        }
+
+    }
     //初始化数据
     private void initDate() {
         //把一个一维数组中的数据：0~15 打乱顺序
@@ -125,6 +175,19 @@ public class GameJFrame extends JFrame implements KeyListener , ActionListener {
         JMenu aboutJMenu = new JMenu("关于我们");
         JMenu renewalIma = new JMenu("更换图片");
 
+        //把5个存档，添加到saveJMenu中
+        saveJMenu.add(saveItem0);
+        saveJMenu.add(saveItem1);
+        saveJMenu.add(saveItem2);
+        saveJMenu.add(saveItem3);
+        saveJMenu.add(saveItem4);
+
+        //把5个读档，添加到loadJMenu中
+        loadJMenu.add(loadItem0);
+        loadJMenu.add(loadItem1);
+        loadJMenu.add(loadItem2);
+        loadJMenu.add(loadItem3);
+        loadJMenu.add(loadItem4);
 
 
         //将每一个选项下面的条目添加到选项当中
@@ -135,6 +198,8 @@ public class GameJFrame extends JFrame implements KeyListener , ActionListener {
         functionJMenu.add(replayItem);
         functionJMenu.add(reLoginItem);
         functionJMenu.add(closeItem);
+        functionJMenu.add(saveJMenu);
+        functionJMenu.add(loadJMenu);
 
 
         aboutJMenu.add(accountItem);
@@ -146,9 +211,21 @@ public class GameJFrame extends JFrame implements KeyListener , ActionListener {
         girl.addActionListener(this);
         animal.addActionListener(this);
         sport.addActionListener(this);
+        saveItem0.addActionListener(this);
+        saveItem1.addActionListener(this);
+        saveItem2.addActionListener(this);
+        saveItem3.addActionListener(this);
+        saveItem4.addActionListener(this);
+        loadItem0.addActionListener(this);
+        loadItem1.addActionListener(this);
+        loadItem2.addActionListener(this);
+        loadItem3.addActionListener(this);
+        loadItem4.addActionListener(this);
         //将菜单里面的两个选项添加到菜单当中
         jMenuBar.add(functionJMenu);
         jMenuBar.add(aboutJMenu);
+        //读取存档
+        getGameInfo();
         //给整个界面设置菜单
         this.setJMenuBar(jMenuBar);
     }
@@ -304,7 +381,11 @@ public class GameJFrame extends JFrame implements KeyListener , ActionListener {
             //关闭当前界面
             this.setVisible(false);
             //打开登录界面
-            new LoginJFrame();
+            try {
+                new LoginJFrame();
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
         }else if(obj==closeItem){
             System.out.println("关闭游戏");
             //直接关闭虚拟机
@@ -363,6 +444,48 @@ public class GameJFrame extends JFrame implements KeyListener , ActionListener {
             //计步器清零
             step=0;
             //重新加载图片
+            initImage();
+        }else if(obj==saveItem0||obj==saveItem1||obj==saveItem2||obj==saveItem3||obj==saveItem4){
+            System.out.println("存档");
+            //获取当前存档的编号
+            JMenuItem item=(JMenuItem) obj;
+            String str = item.getText();
+            int index=str.charAt(2)-'0';
+            //将游戏数据写到本地文件中
+            GameInfo gi=new GameInfo(arr,x,y,path,step);
+            try {
+                ObjectOutputStream oos=new ObjectOutputStream(new FileOutputStream("puzzlegame\\save\\save"+index+".date"));
+                oos.writeObject(gi);
+                oos.close();
+            }catch (IOException ioException){
+                ioException.printStackTrace();
+            }
+            //修改一下item上的信息
+            //存档x(XX步)
+            item.setText("存档"+index+"("+step+"步)");
+            //读档
+            loadJMenu.getItem(index).setText("存档"+index+"("+step+"步)");
+        }else if(obj==loadItem0||obj==loadItem1||obj==loadItem2||obj==loadItem3||obj==loadItem4){
+            System.out.println("读档");
+            //获取当前读档的编号
+            JMenuItem item=(JMenuItem) obj;
+            String str = item.getText();
+            int index=str.charAt(2)-'0';
+            //到本地文件中读取数据
+            GameInfo gi=null;
+            try {
+                ObjectInputStream ois=new ObjectInputStream(new FileInputStream("puzzlegame\\save\\save"+index+".date"));
+                gi = (GameInfo)ois.readObject();
+                ois.close();
+            } catch (IOException | ClassNotFoundException ioException) {
+                ioException.printStackTrace();
+            }
+            arr=gi.getDate();
+            path=gi.getPath();
+            x=gi.getX();
+            y=gi.getY();
+            step=gi.getStep();
+            //冲洗刷新界面
             initImage();
         }
     }

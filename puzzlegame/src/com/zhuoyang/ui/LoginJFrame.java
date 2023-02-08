@@ -4,6 +4,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -12,10 +15,6 @@ public class LoginJFrame extends JFrame implements MouseListener {
 
     //创建一个集合存储正确的用户名的密码
     static ArrayList<User> list=new ArrayList<User>();
-    static {
-        list.add(new User("zhangsan","123"));
-        list.add(new User("lisi","1234"));
-    }
     char[] alphabe={'A','B','C','D','E','F','G','H','I','J','K','L','M','N',
             'O','P','Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d',
             'e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t',
@@ -40,13 +39,22 @@ public class LoginJFrame extends JFrame implements MouseListener {
 
 
 
-    public LoginJFrame(){
+    public LoginJFrame() throws IOException {
+        //读取用户信息
+        BufferedReader br=new BufferedReader(new FileReader("puzzlegame\\userinfo.txt"));
+        String str;
+        while ((str=br.readLine())!=null){
+            String name=str.split("=")[1].split("&")[0];
+            String password=str.split("=")[2];
+            list.add(new User(name,password));
+        }
         //初始化界面
         initJFrame();
         //添加内容
         initView();
         //让界面显示出来
         this.setVisible(true);
+        System.out.println("验证码是:"+codeStr);
     }
 
     private void initJFrame() {
@@ -190,7 +198,12 @@ public class LoginJFrame extends JFrame implements MouseListener {
             }
 
         } else if (e.getSource() == register) {
-            showJDialog("注册功能暂未开放");
+            this.setVisible(false);
+            try {
+                new RegisterJFrame(list);
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
         } else if(e.getSource()==rightCode){
             System.out.println("更换验证码");
             String str=getYanZhengMa(alphabe,num);
